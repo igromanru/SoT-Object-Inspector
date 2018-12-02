@@ -1,0 +1,3 @@
+[submodule "SoT Scanner/FindPattern"]
+	path = SoT Scanner/FindPattern
+	url = git@github.com:igromanru/Cpp-FindPattern.git

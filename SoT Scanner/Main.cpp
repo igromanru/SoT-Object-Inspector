@@ -1,5 +1,8 @@
 #include <Windows.h>
 #include <CommCtrl.h>
+#include <Psapi.h>
+
+#include "FindPattern.h"
 
 #pragma comment(lib,"Comctl32.lib")
 #pragma comment(linker,"\"/manifestdependency:type='win32' \
@@ -12,6 +15,9 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define OBJECTS_OFFSET 0x03F0C080 //48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B D6 48 89 B5
 #define NAME_OFFSET 0x03F036C8 //48 89 1D ?? ?? ?? ?? 48 8B 5C 24 ?? 48 83 C4 28 C3 48 8B 5C 24 ?? 48 89 05 ?? ?? ?? ?? 48 83 C4 28 C3
 
+#define GAME_WINDOW_NAME "Sea of Thieves"
+#define SCANNER_NAME "Sea of Thieves Scanner"
+
 
 BOOL WINAPI ReadProcessMemoryCallback(_In_ HANDLE hProcess, _In_ LPCVOID lpBaseAddress, LPVOID lpBuffer, _In_ SIZE_T nSize, _Out_opt_ SIZE_T * lpNumberOfBytesRead)
 {
@@ -23,9 +29,9 @@ BOOL WINAPI ReadProcessMemoryCallback(_In_ HANDLE hProcess, _In_ LPCVOID lpBaseA
     return bRet;
 }
 
-HWND GetPUBGWindowProcessId(__out LPDWORD lpdwProcessId)
+HWND GetGameWindowProcessId(__out LPDWORD lpdwProcessId)
 {
-    HWND  hWnd = FindWindow(TEXT("UnrealWindow"), NULL);
+    HWND  hWnd = FindWindow(TEXT(GAME_WINDOW_NAME), NULL);
     if (hWnd != NULL)
     {
         if (!GetWindowThreadProcessId(hWnd, lpdwProcessId))
@@ -33,7 +39,7 @@ HWND GetPUBGWindowProcessId(__out LPDWORD lpdwProcessId)
     }
     return hWnd;
 }
-#include <Psapi.h>
+
 HMODULE GetModuleBaseAddress(HANDLE handle) {
     HMODULE hMods[1024];
     DWORD   cbNeeded;
@@ -48,7 +54,7 @@ ULONG_PTR GetBase() {
     static ULONG_PTR base = 0;
     if (base == 0) {
         DWORD procId;
-        if (!GetPUBGWindowProcessId(&procId)) {
+        if (!GetGameWindowProcessId(&procId)) {
             MessageBoxA(0, "GetBase Error", "Error", 0);
             return 0;
         }
@@ -146,10 +152,10 @@ public:
 class FUObjectArray
 {
 public:
-    __int32 ObjFirstGCIndex; //0x0000
+    /*__int32 ObjFirstGCIndex; //0x0000
     __int32 ObjLastNonGCIndex; //0x0004
     __int32 MaxObjectsNotConsideredByGC; //0x0008
-    __int32 OpenForDisregardForGC; //0x000C
+    __int32 OpenForDisregardForGC; //0x000C*/
 
     TUObjectArray ObjObjects; //0x0010
 };
@@ -251,10 +257,10 @@ public:
     };
 };
 
-void InitPubG() {
+void InitGame() {
     HWND hWndGame;
     DWORD dwProcessId;
-    while (NULL == (hWndGame = GetPUBGWindowProcessId(&dwProcessId)))
+    while (NULL == (hWndGame = GetGameWindowProcessId(&dwProcessId)))
     {
         MessageBoxA(0, "please start pubg", "please start pubg", 0);
         ExitProcess(0);
@@ -308,7 +314,7 @@ static HWND showWindow()
     RECT wr = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
     AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
     unsigned int dwStyle = ( WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX);
-    hWnd = CreateWindowEx(NULL, wndClass, "UE4 Scanner", dwStyle, 300, 300, wr.right - wr.left, wr.bottom - wr.top, nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
+    hWnd = CreateWindowEx(NULL, wndClass, SCANNER_NAME, dwStyle, 300, 300, wr.right - wr.left, wr.bottom - wr.top, nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
 
     hStatic = CreateWindowEx(0, WC_STATICA, NULL,
         WS_CHILD | WS_VISIBLE,
@@ -1311,7 +1317,7 @@ int WINAPI WinMain(HINSTANCE _hInstance,
     int nCmdShow) {
     hInstance = _hInstance;
     showWindow();
-    //InitPubG();
+    //InitGame();
     MSG msg;
     while (!bFinish) {
         while (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
